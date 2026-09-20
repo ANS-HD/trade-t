@@ -55,14 +55,6 @@ export const favoritesApi = {
   sync: () => post('/api/favorites/sync-realtime')
 }
 
-export const paperApi = {
-  account: () => get<Record<string, unknown>>('/api/paper/account'),
-  positions: () => get<{ items: Record<string, unknown>[] }>('/api/paper/positions'),
-  orders: () => get<{ items: Record<string, unknown>[] }>('/api/paper/orders'),
-  order: (payload: Record<string, unknown>) => post('/api/paper/order', payload),
-  reset: () => post('/api/paper/reset?confirm=true')
-}
-
 export async function rawGet<T = unknown>(url: string, params?: Record<string, unknown>): Promise<T> {
   return unwrap((await api.get(url, { params })).data)
 }

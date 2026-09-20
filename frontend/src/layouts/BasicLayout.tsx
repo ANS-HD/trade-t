@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Link, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import {
-  AppstoreOutlined, BarChartOutlined, BookOutlined, CreditCardOutlined, DashboardOutlined,
+  BarChartOutlined, BookOutlined, DashboardOutlined,
   DatabaseOutlined, FileTextOutlined, HeartOutlined, LogoutOutlined, MenuFoldOutlined,
   MenuUnfoldOutlined, SearchOutlined, SettingOutlined, UnorderedListOutlined, UserOutlined
 } from '@ant-design/icons'
@@ -23,8 +23,6 @@ const items: MenuProps['items'] = [
   { key: '/favorites', icon: <HeartOutlined />, label: '我的自选' },
   { key: '/tasks', icon: <UnorderedListOutlined />, label: '任务中心' },
   { key: '/reports', icon: <FileTextOutlined />, label: '分析报告' },
-  { key: '/learning', icon: <BookOutlined />, label: '学习中心' },
-  { key: '/paper', icon: <CreditCardOutlined />, label: '模拟交易' },
   {
     key: 'settings', icon: <SettingOutlined />, label: '系统设置', children: [
       { key: '/settings', label: '基础设置' },
@@ -43,7 +41,7 @@ const items: MenuProps['items'] = [
 
 const titles: Record<string, string> = {
   dashboard: '仪表板', analysis: '股票分析', single: '单股分析', batch: '批量分析', screening: '股票筛选',
-  favorites: '我的自选', tasks: '任务中心', reports: '分析报告', view: '报告详情', paper: '模拟交易', stocks: '股票详情', learning: '学习中心',
+  favorites: '我的自选', tasks: '任务中心', reports: '分析报告', view: '报告详情', stocks: '股票详情',
   settings: '系统设置', config: '模型与数据源', database: '数据库管理', cache: '缓存管理', scheduler: '定时任务',
   logs: '日志', 'system-logs': '系统日志', sync: '数据同步', usage: '使用统计', about: '关于项目'
 }

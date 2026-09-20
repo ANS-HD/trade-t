@@ -14,8 +14,6 @@ const ReportDetail = lazy(() => import('@/pages/ReportDetail'))
 const Favorites = lazy(() => import('@/pages/Favorites'))
 const Screening = lazy(() => import('@/pages/Screening'))
 const StockDetail = lazy(() => import('@/pages/StockDetail'))
-const Learning = lazy(() => import('@/pages/Learning'))
-const PaperTrading = lazy(() => import('@/pages/PaperTrading'))
 const Settings = lazy(() => import('@/pages/Settings'))
 const SystemPage = lazy(() => import('@/pages/SystemPage'))
 const About = lazy(() => import('@/pages/About'))
@@ -46,11 +44,6 @@ export default function App() {
           <Route path="/favorites" element={<Favorites />} />
           <Route path="/screening" element={<Screening />} />
           <Route path="/stocks/:code" element={<StockDetail />} />
-          <Route path="/learning" element={<Learning />} />
-          <Route path="/learning/:category" element={<Learning />} />
-          <Route path="/learning/article/:id" element={<Learning article />} />
-          <Route path="/paper/:name.md" element={<Learning article />} />
-          <Route path="/paper" element={<PaperTrading />} />
           <Route path="/settings" element={<Settings />} />
           <Route path="/settings/config" element={<Settings mode="config" />} />
           <Route path="/settings/database" element={<SystemPage type="database" />} />

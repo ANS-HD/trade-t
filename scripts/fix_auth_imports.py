@@ -18,7 +18,6 @@ files_to_fix = [
     "app/routers/news_data.py",
     "app/routers/notifications.py",
     "app/routers/operation_logs.py",
-    "app/routers/paper.py",
     "app/routers/queue.py",
     "app/routers/scheduler.py",
     "app/routers/screening.py",
@@ -106,4 +105,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
