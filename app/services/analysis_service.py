@@ -113,8 +113,8 @@ class AnalysisService:
             # 使用标准配置函数创建完整配置
             from app.core.unified_config import unified_config
 
-            quick_model = getattr(task.parameters, 'quick_analysis_model', None) or unified_config.get_quick_analysis_model()
-            deep_model = getattr(task.parameters, 'deep_analysis_model', None) or unified_config.get_deep_analysis_model()
+            quick_model = "deepseek-chat"
+            deep_model = "deepseek-chat"
 
             # 🔧 从 MongoDB 数据库读取模型的完整配置参数（而不是从 JSON 文件）
             quick_model_config = None
@@ -168,7 +168,7 @@ class AnalysisService:
             progress_tracker.update_progress("💰 预估分析成本")
 
             # 根据模型名称动态查找供应商（同步版本）
-            llm_provider = "dashscope"  # 默认使用dashscope
+            llm_provider = "deepseek"
 
             # 参数配置
             progress_tracker.update_progress("⚙️ 配置分析参数")
@@ -241,8 +241,8 @@ class AnalysisService:
             # 使用标准配置函数创建完整配置
             from app.core.unified_config import unified_config
 
-            quick_model = getattr(task.parameters, 'quick_analysis_model', None) or unified_config.get_quick_analysis_model()
-            deep_model = getattr(task.parameters, 'deep_analysis_model', None) or unified_config.get_deep_analysis_model()
+            quick_model = "deepseek-chat"
+            deep_model = "deepseek-chat"
 
             # 🔧 从 MongoDB 数据库读取模型的完整配置参数（而不是从 JSON 文件）
             quick_model_config = None
@@ -293,7 +293,7 @@ class AnalysisService:
                 logger.warning(f"⚠️ 从 MongoDB 读取模型配置失败: {e}，将使用默认参数")
 
             # 根据模型名称动态查找供应商（同步版本）
-            llm_provider = "dashscope"  # 默认使用dashscope
+            llm_provider = "deepseek"
 
             # 使用标准配置函数创建完整配置
             from app.services.simple_analysis_service import create_analysis_config
@@ -356,7 +356,7 @@ class AnalysisService:
                 task_id=task.task_id,
                 analysts=task.parameters.selected_analysts or ["market", "fundamentals"],
                 research_depth=task.parameters.research_depth or "标准",
-                llm_provider="dashscope"
+                llm_provider="deepseek"
             )
 
             # 缓存进度跟踪器
@@ -633,8 +633,8 @@ class AnalysisService:
             # 使用标准配置函数创建完整配置 - 与单股分析保持一致
             from app.core.unified_config import unified_config
 
-            quick_model = getattr(task.parameters, 'quick_analysis_model', None) or unified_config.get_quick_analysis_model()
-            deep_model = getattr(task.parameters, 'deep_analysis_model', None) or unified_config.get_deep_analysis_model()
+            quick_model = "deepseek-chat"
+            deep_model = "deepseek-chat"
 
             # 🔧 从数据库读取模型的完整配置参数
             quick_model_config = None
@@ -661,7 +661,7 @@ class AnalysisService:
                     }
 
             # 根据模型名称动态查找供应商
-            llm_provider = await get_provider_by_model_name(quick_model)
+            llm_provider = "deepseek"
 
             # 使用标准配置函数创建完整配置
             config = create_analysis_config(

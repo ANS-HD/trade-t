@@ -129,6 +129,16 @@ def get_provider_and_url_by_model_sync(model_name: str) -> dict:
                     api_base = config_dict.get("api_base")
                     model_api_key = config_dict.get("api_key")  # 🔥 获取模型配置的 API Key
 
+                    # 旧版数据库配置可能把 deepseek-chat 错误绑定到
+                    # DashScope。对 DeepSeek 官方模型以模型名为准，避免被历史配置覆盖。
+                    if model_name.startswith("deepseek-") and provider != "deepseek":
+                        logger.warning(
+                            f"⚠️ 忽略过期的模型供应商配置: "
+                            f"{model_name} -> {provider}，强制使用 deepseek"
+                        )
+                        provider = "deepseek"
+                        api_base = None
+
                     # 从 llm_providers 集合中查找厂家配置
                     providers_collection = db.llm_providers
                     provider_doc = providers_collection.find_one({"name": provider})
@@ -323,7 +333,7 @@ def _get_default_backend_url(provider: str) -> str:
         "302ai": "https://api.302.ai/v1",
     }
 
-    url = default_urls.get(provider, "https://dashscope.aliyuncs.com/compatible-mode/v1")
+    url = default_urls.get(provider, "https://api.deepseek.com")
     logger.info(f"🔧 [默认URL] {provider} -> {url}")
     return url
 
@@ -364,7 +374,7 @@ def _get_default_provider_by_model(model_name: str) -> str:
         'chatglm3-6b': 'zhipu'
     }
 
-    provider = model_provider_map.get(model_name, 'dashscope')  # 默认使用阿里百炼
+    provider = model_provider_map.get(model_name, 'deepseek')  # 项目默认使用 DeepSeek
     logger.info(f"🔧 使用默认映射: {model_name} -> {provider}")
     return provider
 
@@ -905,7 +915,7 @@ class SimpleAnalysisService:
                     task_id=task_id,
                     analysts=request.parameters.selected_analysts or ["market", "fundamentals"],
                     research_depth=request.parameters.research_depth or "标准",
-                    llm_provider="dashscope"
+                    llm_provider="deepseek"
                 )
                 logger.info(f"✅ [线程] 进度跟踪器创建完成: {task_id}")
                 return tracker
@@ -1163,53 +1173,16 @@ class SimpleAnalysisService:
             # 配置阶段 - 对应步骤3 "⚙️ 参数设置" (6-8%)
             update_progress_sync(7, "⚙️ 配置分析参数", "configuration")
 
-            # 🆕 智能模型选择逻辑
-            from app.services.model_capability_service import get_model_capability_service
-            capability_service = get_model_capability_service()
-
             research_depth = request.parameters.research_depth if request.parameters else "标准"
 
-            # 1. 检查前端是否指定了模型
-            if (request.parameters and
-                hasattr(request.parameters, 'quick_analysis_model') and
-                hasattr(request.parameters, 'deep_analysis_model') and
-                request.parameters.quick_analysis_model and
-                request.parameters.deep_analysis_model):
-
-                # 使用前端指定的模型
-                quick_model = request.parameters.quick_analysis_model
-                deep_model = request.parameters.deep_analysis_model
-
-                logger.info(f"📝 [分析服务] 用户指定模型: quick={quick_model}, deep={deep_model}")
-
-                # 验证模型是否合适
-                validation = capability_service.validate_model_pair(
-                    quick_model, deep_model, research_depth
-                )
-
-                if not validation["valid"]:
-                    # 记录警告
-                    for warning in validation["warnings"]:
-                        logger.warning(warning)
-
-                    # 如果模型不合适，自动切换到推荐模型
-                    logger.info(f"🔄 自动切换到推荐模型...")
-                    quick_model, deep_model = capability_service.recommend_models_for_depth(
-                        research_depth
-                    )
-                    logger.info(f"✅ 已切换: quick={quick_model}, deep={deep_model}")
-                else:
-                    # 即使验证通过，也记录警告信息
-                    for warning in validation["warnings"]:
-                        logger.info(warning)
-                    logger.info(f"✅ 用户选择的模型验证通过: quick={quick_model}, deep={deep_model}")
-
-            else:
-                # 2. 自动推荐模型
-                quick_model, deep_model = capability_service.recommend_models_for_depth(
-                    research_depth
-                )
-                logger.info(f"🤖 自动推荐模型: quick={quick_model}, deep={deep_model}")
+            # 部署版统一使用 DeepSeek。不再读取历史数据库中的默认模型，
+            # 也不会因为研究深度的“智能推荐”自动切回通义千问。
+            quick_model = "deepseek-chat"
+            deep_model = "deepseek-chat"
+            logger.info(
+                f"🤖 [分析服务] 固定使用 DeepSeek: "
+                f"quick={quick_model}, deep={deep_model}, depth={research_depth}"
+            )
 
             # 🔧 根据快速模型和深度模型分别查找对应的供应商和 API URL
             quick_provider_info = get_provider_and_url_by_model_sync(quick_model)

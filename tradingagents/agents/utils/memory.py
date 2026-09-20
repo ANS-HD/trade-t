@@ -171,61 +171,12 @@ class FinancialSituationMemory:
                 logger.warning(f"⚠️ 千帆未找到DASHSCOPE_API_KEY，记忆功能已禁用")
                 logger.info(f"💡 系统将继续运行，但不会保存或检索历史记忆")
         elif self.llm_provider == "deepseek":
-            # 检查是否强制使用OpenAI嵌入
-            force_openai = os.getenv('FORCE_OPENAI_EMBEDDING', 'false').lower() == 'true'
-
-            if not force_openai:
-                # 尝试使用阿里百炼嵌入
-                dashscope_key = os.getenv('DASHSCOPE_API_KEY')
-                if dashscope_key:
-                    try:
-                        # 测试阿里百炼是否可用
-                        import dashscope
-                        from dashscope import TextEmbedding
-
-                        dashscope.api_key = dashscope_key
-                        # 验证TextEmbedding可用性（不需要实际调用）
-                        self.embedding = "text-embedding-v3"
-                        self.client = None
-                        logger.info(f"💡 DeepSeek使用阿里百炼嵌入服务")
-                    except ImportError as e:
-                        logger.error(f"⚠️ DashScope包未安装: {e}")
-                        dashscope_key = None  # 强制降级
-                    except Exception as e:
-                        logger.error(f"⚠️ 阿里百炼嵌入初始化失败: {e}")
-                        dashscope_key = None  # 强制降级
-            else:
-                dashscope_key = None  # 跳过阿里百炼
-
-            if not dashscope_key or force_openai:
-                # 降级到OpenAI嵌入
-                self.embedding = "text-embedding-3-small"
-                openai_key = os.getenv('OPENAI_API_KEY')
-                if openai_key:
-                    self.client = OpenAI(
-                        api_key=openai_key,
-                        base_url=config.get("backend_url", "https://api.openai.com/v1")
-                    )
-                    logger.warning(f"⚠️ DeepSeek回退到OpenAI嵌入服务")
-                else:
-                    # 最后尝试DeepSeek自己的嵌入
-                    deepseek_key = os.getenv('DEEPSEEK_API_KEY')
-                    if deepseek_key:
-                        try:
-                            self.client = OpenAI(
-                                api_key=deepseek_key,
-                                base_url="https://api.deepseek.com"
-                            )
-                            logger.info(f"💡 DeepSeek使用自己的嵌入服务")
-                        except Exception as e:
-                            logger.error(f"❌ DeepSeek嵌入服务不可用: {e}")
-                            # 禁用内存功能
-                            self.client = "DISABLED"
-                            logger.info(f"🚨 内存功能已禁用，系统将继续运行但不保存历史记忆")
-                    else:
-                        # 禁用内存功能而不是抛出异常
-                        self.client = "DISABLED"
-                        logger.info(f"🚨 未找到可用的嵌入服务，内存功能已禁用")
+            # DeepSeek 聊天接口不提供本项目所需的 embedding 接口。
+            # 部署版要求只使用 DeepSeek，因此不再隐式调用 DashScope/OpenAI，
+            # 直接关闭向量记忆，不影响主分析流程。
+            self.embedding = None
+            self.client = "DISABLED"
+            logger.info("💡 DeepSeek 模式下已禁用向量记忆，不会调用阿里百炼")
         elif self.llm_provider == "google":
             # Google AI使用阿里百炼嵌入（如果可用），否则禁用记忆功能
             dashscope_key = os.getenv('DASHSCOPE_API_KEY')
