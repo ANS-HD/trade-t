@@ -1,0 +1,136 @@
+name: tradingagents
+
+services:
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: tradingagents-frontend:react
+    ports:
+      - "${WEB_BIND:-0.0.0.0}:${WEB_PORT:-80}:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    mem_limit: 64m
+    cpus: 0.25
+    pids_limit: 64
+    networks: [app]
+    logging: &logging
+      driver: json-file
+      options:
+        max-size: 5m
+        max-file: "2"
+
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    image: tradingagents-backend:react
+    env_file:
+      - path: .env
+        required: false
+    environment:
+      DOCKER_CONTAINER: "true"
+      PYTHONUNBUFFERED: "1"
+      MALLOC_ARENA_MAX: "2"
+      OMP_NUM_THREADS: "1"
+      OPENBLAS_NUM_THREADS: "1"
+      MKL_NUM_THREADS: "1"
+      NUMEXPR_NUM_THREADS: "1"
+      TZ: "${TZ:-Asia/Shanghai}"
+      API_HOST: 0.0.0.0
+      API_PORT: "8000"
+      MONGODB_HOST: mongodb
+      MONGODB_PORT: "27017"
+      MONGODB_USERNAME: "${MONGODB_USERNAME:-admin}"
+      MONGODB_PASSWORD: "${MONGODB_PASSWORD:?Set MONGODB_PASSWORD in .env}"
+      MONGODB_DATABASE: "${MONGODB_DATABASE:-tradingagents}"
+      MONGODB_AUTH_SOURCE: admin
+      MONGODB_URL: "mongodb://${MONGODB_USERNAME:-admin}:${MONGODB_PASSWORD:?Set MONGODB_PASSWORD in .env}@mongodb:27017/${MONGODB_DATABASE:-tradingagents}?authSource=admin"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"
+      REDIS_URL: "redis://:${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}@redis:6379/0"
+      MONGO_MAX_CONNECTIONS: "${MONGO_MAX_CONNECTIONS:-10}"
+      MONGO_MIN_CONNECTIONS: "${MONGO_MIN_CONNECTIONS:-0}"
+      REDIS_MAX_CONNECTIONS: "${REDIS_MAX_CONNECTIONS:-10}"
+      TRADINGAGENTS_LOG_DIR: /app/logs
+      TRADINGAGENTS_DATA_DIR: /app/data
+      TRADINGAGENTS_CACHE_DIR: /app/data/cache
+      CORS_ORIGINS: "*"
+    volumes:
+      - ./config:/app/config
+      - app_data:/app/data
+      - app_logs:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    expose: ["8000"]
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://127.0.0.1:8000/api/health"]
+      interval: 20s
+      timeout: 8s
+      retries: 5
+      start_period: 120s
+    restart: unless-stopped
+    mem_limit: 768m
+    cpus: 1.0
+    pids_limit: 256
+    networks: [app]
+    logging: *logging
+
+  mongodb:
+    image: mongo:7.0
+    command: ["mongod", "--wiredTigerCacheSizeGB", "0.25"]
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: "${MONGODB_USERNAME:-admin}"
+      MONGO_INITDB_ROOT_PASSWORD: "${MONGODB_PASSWORD:?Set MONGODB_PASSWORD in .env}"
+      MONGO_INITDB_DATABASE: "${MONGODB_DATABASE:-tradingagents}"
+      TZ: "${TZ:-Asia/Shanghai}"
+    volumes:
+      - mongodb_data:/data/db
+    healthcheck:
+      test: ["CMD-SHELL", "mongosh --quiet --username \"$$MONGO_INITDB_ROOT_USERNAME\" --password \"$$MONGO_INITDB_ROOT_PASSWORD\" --authenticationDatabase admin --eval 'db.adminCommand({ ping: 1 })' >/dev/null"]
+      interval: 20s
+      timeout: 8s
+      retries: 10
+      start_period: 40s
+    restart: unless-stopped
+    mem_limit: 384m
+    cpus: 0.5
+    pids_limit: 128
+    networks: [app]
+    logging: *logging
+
+  redis:
+    image: redis:7.4-alpine
+    environment:
+      REDIS_PASSWORD: "${REDIS_PASSWORD:?Set REDIS_PASSWORD in .env}"
+      TZ: "${TZ:-Asia/Shanghai}"
+    command: ["sh", "-c", "exec redis-server --appendonly yes --maxmemory 64mb --maxmemory-policy noeviction --requirepass \"$$REDIS_PASSWORD\""]
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep -q PONG"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    mem_limit: 96m
+    cpus: 0.25
+    pids_limit: 64
+    networks: [app]
+    logging: *logging
+
+volumes:
+  mongodb_data:
+  redis_data:
+  app_data:
+  app_logs:
+
+networks:
+  app:
+    driver: bridge

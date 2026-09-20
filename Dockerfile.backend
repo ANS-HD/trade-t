@@ -1,0 +1,55 @@
+# Backend Dockerfile for FastAPI service (TradingAgents-CN v1.0.0-preview)
+# 前后端分离架构 - 后端服务
+# 支持多架构: amd64, arm64
+
+# 使用 Debian Bookworm (稳定版) 而不是 Trixie (测试版)
+FROM python:3.10-slim-bookworm
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    MALLOC_ARENA_MAX=2 \
+    OMP_NUM_THREADS=1 \
+    OPENBLAS_NUM_THREADS=1 \
+    MKL_NUM_THREADS=1 \
+    NUMEXPR_NUM_THREADS=1 \
+    TZ=Asia/Shanghai
+
+WORKDIR /app
+
+# 低配服务器镜像只安装健康检查所需的 curl。
+# Pandoc、wkhtmltopdf 和中文字体体积较大，默认不再打包；Markdown 导出不受影响。
+RUN mkdir -p /app/logs /app/data /app/config && \
+    echo 'Acquire::Retries "3";' > /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::http::Timeout "30";' >> /etc/apt/apt.conf.d/80-retries && \
+    echo 'Acquire::https::Timeout "30";' >> /etc/apt/apt.conf.d/80-retries && \
+    (apt-get update || apt-get update || apt-get update) && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl && \
+    rm -rf /var/lib/apt/lists/*
+
+# 复制pyproject.toml和README.md（pip安装需要）
+COPY pyproject.toml README.md ./
+
+# 安装Python依赖
+# 优化说明：
+# 1. 使用清华镜像加速下载
+# 2. 优先使用预编译的二进制wheel包（--prefer-binary）
+# 3. 避免从源码编译，大幅提升ARM架构构建速度
+RUN pip install --upgrade pip -i https://pypi.tuna.tsinghua.edu.cn/simple && \
+    pip install --prefer-binary . -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 复制后端代码和必需模块
+COPY app ./app
+COPY tradingagents ./tradingagents
+COPY config ./config
+
+# 暴露后端端口（与docker-compose.v1.0.0.yml一致）
+EXPOSE 8000
+
+# Docker环境标识
+ENV DOCKER_CONTAINER=true
+
+# 启动FastAPI服务
+CMD ["python", "-m", "uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
