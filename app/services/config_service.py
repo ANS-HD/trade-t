@@ -476,6 +476,8 @@ class ConfigService:
                 )
             ],
             system_settings={
+                "quick_analysis_model": "deepseek-chat",
+                "deep_analysis_model": "deepseek-chat",
                 "max_concurrent_tasks": 1,
                 "default_analysis_timeout": 300,
                 "enable_cache": True,
